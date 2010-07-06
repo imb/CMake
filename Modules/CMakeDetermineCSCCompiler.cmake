@@ -53,7 +53,7 @@ IF(NOT CMAKE_CSC_COMPILER)
     # 
     # The CSC adapter is used to help translate a CMake style of doing
     # things into a C# style. CMake grew up from a two-part compile/link
-    # system, whereas C# tends to use a single step compile/link. The
+    # system, whereas C# is a single step compile/link. The
     # adapter should really only be used for "Makefile" style compiles.
     #
     # We use a configuration file on our adapter to allow us to set lots
