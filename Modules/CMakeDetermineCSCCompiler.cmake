@@ -61,7 +61,7 @@ IF(NOT CMAKE_CSC_COMPILER)
     #
     # The adapter is only needed for makefile generators.
     #
-    IF(CMAKE_GENERATOR MATCHES "Visual")
+    IF(NOT CMAKE_GENERATOR MATCHES "Visual")
         SET(CMAKE_CSC_ADAPTER
             ${CMAKE_BINARY_DIR}${CMAKE_FILES_DIRECTORY}/csc_adapt.exe
         )
@@ -97,9 +97,10 @@ IF(NOT CMAKE_CSC_COMPILER)
     ELSE()
         SET(CMAKE_CSC_COMPILER ${_CMAKE_CSC_COMPILER})
     ENDIF()
-    SET(CMAKE_CSC_COMPILER_ID "csc")
 ENDIF()
 
+# We don't want to pick up our adapter, so read from the actual compiler name.
+GET_FILENAME_COMPONENT(CMAKE_CSC_COMPILER_ID ${_CMAKE_CSC_COMPILER} NAME_WE)
 
 
 CONFIGURE_FILE(${CMAKE_ROOT}/Modules/CMakeCSCCompiler.cmake.in
