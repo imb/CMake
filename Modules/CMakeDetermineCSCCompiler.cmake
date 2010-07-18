@@ -65,29 +65,43 @@ IF(NOT CMAKE_CSC_COMPILER)
         SET(CMAKE_CSC_ADAPTER
             ${CMAKE_BINARY_DIR}${CMAKE_FILES_DIRECTORY}/csc_adapt.exe
         )
+        SET(CMAKE_CSC_ADAPTER_CONFIG_SRC
+             ${CMAKE_BINARY_DIR}${CMAKE_FILES_DIRECTORY}/csc_config.cs
+        )
+        CONFIGURE_FILE(${CMAKE_ROOT}/Modules/CSCAdapt/csc_config.cs.in
+            ${CMAKE_CSC_ADAPTER_CONFIG_SRC}
+        )
         SET(CMAKE_CSC_ADAPTER_SRC
-             ${CMAKE_BINARY_DIR}${CMAKE_FILES_DIRECTORY}/csc_adapt.cs
-        )
-        CONFIGURE_FILE(${CMAKE_ROOT}/Modules/CSCAdapt/csc_adapt.cs.in
-            ${CMAKE_CSC_ADAPTER_SRC}
-        )
+	    ${CMAKE_ROOT}/Modules/CSCAdapt/csc_adapt.cs
+	)
         MESSAGE(STATUS "Build C# adapter")
+	FILE(TO_NATIVE_PATH ${_CMAKE_CSC_COMPILER} _CMAKE_CSC_COMPILER_NATIVE)
         FILE(TO_NATIVE_PATH ${CMAKE_CSC_ADAPTER} CMAKE_CSC_ADAPTER_NATIVE)
+	FILE(TO_NATIVE_PATH ${CMAKE_CSC_ADAPTER_CONFIG_SRC} CMAKE_CSC_ADAPTER_CONFIG_SRC_NATIVE)
         FILE(TO_NATIVE_PATH ${CMAKE_CSC_ADAPTER_SRC} CMAKE_CSC_ADAPTER_SRC_NATIVE)
-        EXECUTE_PROCESS(
-            COMMAND "${_CMAKE_CSC_COMPILER}"
+	SET(CMAKE_CSC_ADAPTER_COMPILE_CMD 
+		"${_CMAKE_CSC_COMPILER_NATIVE}"
                 /target:exe 
-                /out:${CMAKE_CSC_ADAPTER_NATIVE}
-                "${CMAKE_CSC_ADAPTER_SRC_NATIVE}"
-            OUTPUT_VARIABLE OUTPUT
-            RESULT_VARIABLE RETCODE
+               	/out:${CMAKE_CSC_ADAPTER_NATIVE}
+		"${CMAKE_CSC_ADAPTER_SRC_NATIVE}"
+		"${CMAKE_CSC_ADAPTER_CONFIG_SRC_NATIVE}"
+	)
+        MESSAGE(STATUS "Build C# adapter: ${CMAKE_CSC_ADAPTER_COMPILE_CMD}")
+        EXECUTE_PROCESS(
+            COMMAND ${CMAKE_CSC_ADAPTER_COMPILE_CMD} 
+	    OUTPUT_VARIABLE CMAKE_CSC_ADAPTER_MAKE_OUTPUT
+	    ERROR_VARIABLE  CMAKE_CSC_ADAPTER_MAKE_OUTPUT
+	    OUTPUT_STRIP_TRAILING_WHITESPACE
+	    RESULT_VARIABLE CMAKE_CSC_ADAPTER_MAKE_RESULT
         )
-        IF(RETCODE)
+        IF(NOT "${CMAKE_CSC_ADAPTER_MAKE_RESULT}" MATCHES "^0$")
             message(STATUS "Build C# adapter - failed.")
-            message(SEND_ERROR 
-                "Unable to build the C# adapter.\n"
+            message(FATAL_ERROR
+                "Unable to build the C# adapter (${CMAKE_CSC_ADAPTER_MAKE_RESULT}).\n"
                 "It failed with the following output:\n"
-                "${OUTPUT}"
+                "'${CMAKE_CSC_ADAPTER_MAKE_OUTPUT}'\n"
+		"Compile command was:\n"
+		"${CMAKE_CSC_ADAPTER_COMPILE_CMD}"
             )
         ELSE()
             message(STATUS "Build C# adapter: ${CMAKE_CSC_ADAPTER}")
