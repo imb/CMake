@@ -43,17 +43,6 @@ using System;
 using System.Collections;
 using System.Text;
 
-/* Helpful variables supplied to us via CMAKE. */
-struct CMakeVars
-{
-    static public string CMAKE_COMMAND = "@CMAKE_COMMAND@";
-    static public string CSC_COMPILER = "@_CMAKE_CSC_COMPILER@";
-
-    static public string NormPath(string p) {
-        return p.Replace("/", "\\");
-    }
-}
-
 class CSC
 {
     string arguments = null;
