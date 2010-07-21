@@ -136,11 +136,18 @@ class CompileObject
 }
 
 
-class LinkExecutable
+class Linker
 {
     string csc_args =null;
 
-    public LinkExecutable(string[] args) 
+    string BackTraceSourceFile(string backtraceFile)
+    {
+        System.IO.StreamReader sr = new System.IO.StreamReader(backtraceFile);
+        string s = sr.ReadToEnd();
+        return s.Trim();
+    }
+     
+    public Linker(string[] args) 
     {
         /* Lets not pretend to be "elegant" here, just get it done for
         now. Absorb all flags, but when you see "---" we are dealing
@@ -162,12 +169,6 @@ class LinkExecutable
             }
         }
         this.csc_args = build_args.ToString();
-    }
-
-    string BackTraceSourceFile(string backtraceFile) {
-        System.IO.StreamReader sr = new System.IO.StreamReader(backtraceFile);
-        string s = sr.ReadToEnd();
-        return s.Trim();
     }
 
     public int Invoke() {
@@ -230,10 +231,16 @@ class CscAdapt
             exitCode = tc.Invoke();
         }
         else if (args[0] == "link_executable") {
-            LinkExecutable le = new LinkExecutable(args);
+            Linker le = new Linker(args);
             exitCode = le.Invoke();
         }
-        else {
+        else if (args[0] == "shared_library")
+        {
+            Linker sl = new Linker(args);
+            exitCode = sl.Invoke();
+        } 
+        else
+        {
             throw new ApplicationException(
                     String.Format(
                         "unknown sub command - {0}",
