@@ -42,6 +42,7 @@ Arguments and Conventions:
 using System;
 using System.Collections;
 using System.Text;
+using System.IO;
 
 class CSC
 {
@@ -97,6 +98,23 @@ class CSC
     }
 }
 
+class BackTracer
+{
+    public static void Save(string source, string object_) {
+        System.IO.StreamWriter sw = new System.IO.StreamWriter(object_);
+        string full_path = Path.GetFullPath(source);
+        sw.WriteLine(full_path);
+        sw.Close();
+    }
+
+    public static string Load(string object_)
+    {
+        System.IO.StreamReader sr = new System.IO.StreamReader(object_);
+        string s = sr.ReadToEnd();
+        return s.Trim();
+    }
+}
+
 
 class CompileObject
 {
@@ -128,42 +146,69 @@ class CompileObject
         file that "back traces" to the source file. So later, when 
         the other adapters work on the data, they can figure out
         the original source by looking at the back trace. */
-        System.IO.StreamWriter sw = new System.IO.StreamWriter(this.object_);
-        sw.WriteLine(this.source);
-        sw.Close();
+        BackTracer.Save(this.source, this.object_);
         return 0;
     }
 }
 
+enum ParseState
+{
+    None,
+    Objects,
+    LinkLibraries,
+    TargetImpLib
+};
 
 class Linker
 {
     string csc_args =null;
-
-    string BackTraceSourceFile(string backtraceFile)
-    {
-        System.IO.StreamReader sr = new System.IO.StreamReader(backtraceFile);
-        string s = sr.ReadToEnd();
-        return s.Trim();
-    }
      
     public Linker(string[] args) 
     {
         /* Lets not pretend to be "elegant" here, just get it done for
         now. Absorb all flags, but when you see "---" we are dealing
         with "our" flags. */
-        StringBuilder build_args = new StringBuilder();       
-        bool is_parsing_objects = false;
+        StringBuilder build_args = new StringBuilder(); 
+        ParseState state = ParseState.None;
         for(int i=1; i < args.Length; ++i ) {
             string a = args[i];
-            if ( a.StartsWith("---") ) {
-                /* Well for now there is only one possible flag. */
-                is_parsing_objects = true;
-            } else if ( is_parsing_objects ) {
-                string src_file = this.BackTraceSourceFile(a);
+            if (a.StartsWith("---objects"))
+            {
+                state = ParseState.Objects;
+            }
+            else if (a.StartsWith("---link_libraries"))
+            {
+                state = ParseState.LinkLibraries;
+            }
+            else if (a.StartsWith("---target_implib"))
+            {
+                state = ParseState.TargetImpLib;
+            }
+            else if (state == ParseState.Objects)
+            {
+                string src_file = BackTracer.Load(a);
                 build_args.Append(src_file);
                 build_args.Append(" ");
-            } else {
+            }
+            else if (state == ParseState.LinkLibraries)
+            {
+                string ref_asm = BackTracer.Load(a);
+                build_args.Append(String.Format("/reference:{0}", ref_asm));
+                build_args.Append(" ");
+            }
+            else if (state == ParseState.TargetImpLib)
+            {
+                /* Next argument is our import library, and it is only
+                 one argument long. When you think about it the sole purpose
+                 of an import library is to point to the DLL that eventually
+                 should be linked in the final EXE. So this is just like
+                 our "object" backtrace files. */
+                string[] split = a.Split(':');
+                BackTracer.Save(split[0], split[1]);
+                state = ParseState.None;
+            }
+            else
+            {
                 build_args.Append(a);
                 build_args.Append(" ");
             }
@@ -238,6 +283,7 @@ class CscAdapt
         {
             Linker sl = new Linker(args);
             exitCode = sl.Invoke();
+
         } 
         else
         {
